@@ -1,2 +1,7 @@
+[packages]
+boto3 = "*"
+configparser = "*"
+
+
 [requires]
 python_version = "3.5"
