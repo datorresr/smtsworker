@@ -11,10 +11,10 @@ config = configparser.ConfigParser()
 config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
 config.read(config_file)
 
-dynamodb = boto3.resource('dynamodb', region_name='us-east-2', aws_access_key_id='AKIAIVKAI3NDSJDTRSUA', aws_secret_access_key='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')
-s3 = boto3.resource('s3', region_name='us-east-2', aws_access_key_id='AKIAJBTATXXUACKXPIRQ', aws_secret_access_key='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')
-sqs = boto3.resource('sqs', region_name='us-east-2', aws_access_key_id='AKIAIVKAI3NDSJDTRSUA', aws_secret_access_key='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')
-bucket = s3.Bucket('smarttoolsG5')
+dynamodb = boto3.resource('dynamodb', region_name=os.environ['AWS_REGION'], aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
+s3 = boto3.resource('s3', region_name=os.environ['AWS_REGION'], aws_access_key_id=os.environ['S3_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['S3_SECRET_ACCESS_KEY'])
+sqs = boto3.resource('sqs', region_name=os.environ['AWS_REGION'], aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
+bucket = s3.Bucket(config['DEFAULT']['bucketS3'])
 table = dynamodb.Table('videos')
 queue = sqs.get_queue_by_name(QueueName='smts-videos-queue')
 folder = config['DEFAULT']['folder']
@@ -40,16 +40,19 @@ def get_videos_to_convert(cpu_count):
 	videos = []
 	messages = queue.receive_messages(MaxNumberOfMessages=cpu_count)
 	for message in messages:
-		videos.append(message.body)
+		video_inf = message.body + ';' + message.receipt_handle 
+		videos.append(video_inf)
 	return videos
 
 def convert_video(video):
-	video_id, video_concurso_id, video_name = video.split('-')
+	video_id, video_concurso_id, video_name, message_receipt_handler = video.split(';')
 	print (video_id)
 	print (video_concurso_id)
 	print (video_name)
 	print (folder+video_name)
 	print (folder_s3+video_name)
+	print (message_receipt_handler)
+	
 	# do all prints
 	bucket.download_file(folder_s3+video_name, folder+video_name)
 	video_output_name = video_name.rsplit('.', 1)[0]+".mp4"
@@ -58,94 +61,44 @@ def convert_video(video):
 	bucket.upload_file(folder+video_output_name, folder_s3+video_output_name)
 	response = table.update_item(
 		Key={
-	    	'video_id': int(video_id),
-	    	'concurso_id': int(video_concurso_id)
+	    	'id': video_id
 		},
-		UpdateExpression="set video_info.estado = :e",
+		UpdateExpression="set estado = :e",
 		ExpressionAttributeValues={
-			':e': 1
+			':e': 't'
 		},
 		ReturnValues="UPDATED_NEW"
 	)
 	# We send the email
 	try:
 		# Create the message to be sent once the convertion is finished.
-		message = """From: From Person <smarttoolsg5@gmail.com>
-		To: To Person <smarttoolsg5v2@gmail.com>
-		MIME-Version: 1.0
-		Content-type: text/html
-		Subject: SMTP HTML e-mail test
+		message = """
+		Subject: Conversi&oacute;n de video
 
 		Su video ha sido convertido de manera exitosa. Puedes verlo ingresando a la p&aacutegina del concurso.
-
 		"""
 
 		# Create the message variables
 		sender = 'smarttoolsg5@gmail.com'
 		receivers = ['smarttoolsg5v2@gmail.com']
 		smtpObj = smtplib.SMTP(e_address, int(e_port), e_domain)
-		#smtpObj.set_debuglevel(1)
+		smtpObj.set_debuglevel(1)
 		smtpObj.starttls()
 		smtpObj.login(e_user, e_passw)
 		smtpObj.sendmail(sender, receivers, message)
 		smtpObj.quit()
 		print ("Successfully sent email")
-	except SMTPException:
-		print ("Error: unable to send email")
-	#update_video(video_id, video_concurso_id)
-	#send_video_email()
-
-def update_video(video_id, concurso_id):
-	response = table.update_item(
-		Key={
-	    	'video_id': video_id,
-	    	'concurso_id': concurso_id
-		},
-		UpdateExpression="set video_info.estado = :e",
-		ExpressionAttributeValues={
-			':e': 1
-		},
-		ReturnValues="UPDATED_NEW"
-	)
-
-def send_video_email():
-	# We send the email
-	try:
-		# Create the message to be sent once the convertion is finished.
-		message = """From: From Person <smarttoolsg5@gmail.com>
-		To: To Person <smarttoolsg5v2@gmail.com>
-		MIME-Version: 1.0
-		Content-type: text/html
-		Subject: SMTP HTML e-mail test
-
-		Su video ha sido convertido de manera exitosa. Puedes verlo ingresando a la p&aacutegina del concurso.
-
-		"""
-
-		# Create the message variables
-		sender = 'smarttoolsg5@gmail.com'
-		receivers = ['smarttoolsg5v2@gmail.com']
-		smtpObj = smtplib.SMTP(e_address, int(e_port), e_domain)
-		#smtpObj.set_debuglevel(1)
-		smtpObj.starttls()
-		smtpObj.login(e_user, e_passw)
-		smtpObj.sendmail(sender, receivers, message)
-		smtpObj.quit()
-		print ("Successfully sent email")
+		queue.delete_messages(
+			Entries=[
+		    	{
+		    		'Id': str(int(round(time.time() * 1000))),
+					'ReceiptHandle': message_receipt_handler
+				},
+			]
+		)
 	except SMTPException:
 		print ("Error: unable to send email")
 
-def f(source):
-	folder = "/home/klyo/Videos/"
-	out = source.rsplit('.',1)[0]
-	command = "ffmpeg -i {2}{0} -f mp4 -vcodec h264 -c:a aac -strict -2 {2}{1}.mp4 -y"
-	os.system(command.format(source, out, folder))
-
-# 	def anotherf():
-	#print (os.environ['DOMAIN'])
-	#print ("DOMAIN" in os.environ)
-	#with multiprocessing.Pool(cpu_count) as pool:
-	#	pool.map(f, numbers)
 
 if __name__ == "__main__":
 	main()
