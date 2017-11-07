@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-print("Ejecutanto Worker")
 import multiprocessing, time, os, configparser, binascii, subprocess as sp, smtplib, json, boto3  
 from smtplib import SMTPException
 from multiprocessing import Pool, TimeoutError
@@ -12,7 +11,6 @@ config = configparser.ConfigParser()
 config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
 config.read(config_file)
 
-print("Ejecutanto Worker")
 dynamodb = boto3.resource('dynamodb', region_name=os.environ['AWS_REGION'], aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
 s3 = boto3.resource('s3', region_name=os.environ['S3_REGION'], aws_access_key_id=os.environ['S3_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['S3_SECRET_ACCESS_KEY'])
 sqs = boto3.resource('sqs', region_name=os.environ['AWS_REGION'], aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
