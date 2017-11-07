@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+print("Ejecutanto Worker")
 import multiprocessing, time, os, configparser, binascii, subprocess as sp, smtplib, json, boto3  
 from smtplib import SMTPException
 from multiprocessing import Pool, TimeoutError
