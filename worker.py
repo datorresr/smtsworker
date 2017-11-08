@@ -54,11 +54,11 @@ def convert_video(video):
 	print (message_receipt_handler)
 	
 	# do all prints
-	bucket.download_file(folder_s3+video_name, folder+video_name)
+	#bucket.download_file(folder_s3+video_name, folder+video_name)
 	video_output_name = video_name.rsplit('.', 1)[0]+".mp4"
 	command = "ffmpeg -i {0}{1} -f mp4 -vcodec h264 -c:a aac -strict -2 {0}{2} -y"
-	os.system(command.format(folder, video_name, video_output_name))
-	bucket.upload_file(folder+video_output_name, folder_s3+video_output_name)
+	os.system(command.format(folder_s3, video_name, video_output_name))
+	#bucket.upload_file(folder+video_output_name, folder_s3+video_output_name)
 	response = table.update_item(
 		Key={
 	    	'id': video_id
