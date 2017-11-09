@@ -10,6 +10,8 @@ psycopg2 = "*"
 whitenoise = "*"
 boto3 = "*"
 configparser = "*"
+mysqlclient = "*"
+iron_mq = "*"
 
 [requires]
 python_version = "3.5"
