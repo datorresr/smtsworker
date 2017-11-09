@@ -25,13 +25,13 @@ ironmq = IronMQ(host=os.environ['IRON_HOST'], project_id=os.environ['IRON_ID'], 
 queue = ironmq.queue(os.environ['IRON_QUEUE'])
 
 # We create a connection to the database and create a cursor
-dbConnection = MySQLdb.connect(
-	host = db_host,
-	port = int(db_port),
-	user = db_user, 
-	passwd = db_passw,
-	db = db_name)
-dbCursor = dbConnection.cursor()
+#dbConnection = MySQLdb.connect(
+#	host = db_host,
+#	port = int(db_port),
+#	user = db_user, 
+#	passwd = db_passw,
+#	db = db_name)
+#dbCursor = dbConnection.cursor()
 
 dynamodb = boto3.resource('dynamodb', region_name=os.environ['AWS_REGION'], aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
 s3 = boto3.resource('s3', region_name=os.environ['S3_REGION'], aws_access_key_id=os.environ['S3_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['S3_SECRET_ACCESS_KEY'])
@@ -84,7 +84,7 @@ def convert_video(video):
 	command = "ffmpeg -i {0}{1} -f mp4 -vcodec h264 -c:a aac -strict -2 {0}{2} -y"
 	os.system(command.format(folder, video_name, video_output_name))
 	bucket.upload_file(folder+video_output_name, folder_s3+video_output_name)
-	dbCursor.execute("UPDATE videos SET estado=1 WHERE video_source='{0}'".format(video_name))
+	#dbCursor.execute("UPDATE videos SET estado=1 WHERE video_source='{0}'".format(video_name))
 	key = os.environ['MAIL_KEY']
 	sandbox = os.environ['MAIL_SANDBOX']
 	recipient = 'smarttoolsg5@gmail.com'
